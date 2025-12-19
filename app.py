@@ -316,7 +316,7 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
     return full_reading
 
 # Main app header
-st.markdown('<div class="main-title">🔮 MISZTIKUS SZANA 🔮</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🔮 MISZTIKUS SZANA</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">✨ Ancient Wisdom from the Mystic Realms ✨</div>', unsafe_allow_html=True)
 
 # Token display
