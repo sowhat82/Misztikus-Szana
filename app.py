@@ -11,6 +11,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Auto-scroll to top on stage change
+st.markdown("""
+<script>
+    window.scrollTo(0, 0);
+</script>
+""", unsafe_allow_html=True)
+
 # Custom CSS for vintage gypsy style
 st.markdown("""
 <style>
@@ -479,21 +486,34 @@ elif st.session_state.stage == 'tarot':
     </div>
     """, unsafe_allow_html=True)
 
-    # Display tarot cards in grid
+    # Display tarot cards in grid using actual card images
     cards = list(TAROT_CARDS.keys())
 
-    # Display 6 rows of 4 cards each with symbols and short labels
+    # CSS to remove button padding and make cards clickable
+    st.markdown("""
+    <style>
+    .tarot-container {
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .tarot-container:hover {
+        transform: scale(1.05);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Display 6 rows of 4 cards each
     for row in range(6):
         cols = st.columns(4, gap="small")
         for col_idx in range(4):
             card_idx = row * 4 + col_idx
             if card_idx < len(cards):
                 card_name = cards[card_idx]
-                symbol, meaning, label = TAROT_CARDS[card_name]
                 with cols[col_idx]:
-                    # Symbol + short label for uniform card appearance
-                    button_text = f"{symbol}\n{label}"
-                    if st.button(button_text, key=f"card_{card_idx}", use_container_width=True):
+                    # Display card image
+                    st.image(f"tarot_card_{card_idx+1:02d}.png", use_container_width=True)
+                    # Compact button directly below
+                    if st.button("▲ Select", key=f"card_{card_idx}", use_container_width=True):
                         st.session_state.selected_card = card_name
                         st.session_state.tarot_selected = True
                         st.session_state.stage = 'dice'
@@ -530,16 +550,23 @@ elif st.session_state.stage == 'orb':
     </div>
     """, unsafe_allow_html=True)
 
-    # Double-sized cosmic orb
+    # Double-sized cosmic orb - centered
     st.markdown("""
-    <div style='text-align: center; margin: 40px;'>
+    <div style='
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 40px 0;
+    '>
         <div style='
-            display: inline-block;
             background: radial-gradient(circle, rgba(138, 43, 226, 0.4), rgba(75, 0, 130, 0.2));
             border-radius: 50%;
             padding: 40px;
             box-shadow: 0 0 60px rgba(138, 43, 226, 0.8), 0 0 100px rgba(75, 0, 130, 0.5);
             animation: pulse 2s infinite;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         '>
             <div style='font-size: 12em; text-shadow: 0 0 30px rgba(138, 43, 226, 0.8);'>🔮</div>
         </div>
