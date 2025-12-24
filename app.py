@@ -176,30 +176,32 @@ if 'dice_result' not in st.session_state:
 if 'orb_result' not in st.session_state:
     st.session_state.orb_result = None
 
-# Tarot card meanings
+# Tarot card meanings with visual symbols
 TAROT_CARDS = {
-    "The Fool": "new beginnings and spontaneous adventures",
-    "The Magician": "manifestation and resourcefulness",
-    "The High Priestess": "intuition and sacred knowledge",
-    "The Empress": "abundance and nurturing",
-    "The Emperor": "authority and structure",
-    "The Hierophant": "tradition and conformity",
-    "The Lovers": "harmony and choices",
-    "The Chariot": "willpower and determination",
-    "Strength": "courage and patience",
-    "The Hermit": "soul searching and introspection",
-    "Wheel of Fortune": "good luck and karma",
-    "Justice": "truth and fairness",
-    "The Hanged Man": "surrender and new perspective",
-    "Death": "transformation and endings",
-    "Temperance": "balance and moderation",
-    "The Devil": "addiction and materialism",
-    "The Tower": "sudden change and revelation",
-    "The Star": "hope and renewal",
-    "The Moon": "illusion and intuition",
-    "The Sun": "joy and success",
-    "Judgement": "reflection and reckoning",
-    "The World": "completion and accomplishment"
+    "The Sun": ("☀️", "joy and success"),
+    "The Star": ("⭐", "hope and renewal"),
+    "The Moon": ("🌙", "illusion and intuition"),
+    "Yin Yang": ("☯️", "balance and harmony"),
+    "The Fire": ("🔥", "passion and transformation"),
+    "The Eye": ("👁️", "insight and awareness"),
+    "The Cosmos": ("🌌", "infinite possibilities"),
+    "The North Star": ("⭐", "guidance and direction"),
+    "The Planet": ("🪐", "cycles and expansion"),
+    "The Phoenix": ("🔥", "rebirth and renewal"),
+    "The Teal Sun": ("🌞", "vitality and energy"),
+    "The Red Sun": ("☀️", "power and strength"),
+    "The Crystal": ("💎", "clarity and truth"),
+    "The Sacred Eye": ("👁️", "divine wisdom"),
+    "The Serpent": ("🐍", "transformation and healing"),
+    "The Crescent": ("🌙", "intuition and mystery"),
+    "The Lovers": ("💑", "harmony and choices"),
+    "The Hermit": ("🕯️", "soul searching and introspection"),
+    "The Chariot": ("⚡", "willpower and determination"),
+    "The Tower": ("🗼", "sudden change and revelation"),
+    "The Wheel": ("☸️", "good luck and karma"),
+    "The Magician": ("✨", "manifestation and resourcefulness"),
+    "The Empress": ("👑", "abundance and nurturing"),
+    "The Fool": ("🎭", "new beginnings and spontaneous adventures")
 }
 
 # Chinese Zodiac
@@ -267,10 +269,13 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
     zodiac_sign, zodiac_trait = get_zodiac_sign(birth_date)
     chinese_animal, chinese_trait = get_chinese_zodiac(birth_date)
 
+    # Get tarot card meaning
+    tarot_symbol, tarot_meaning = TAROT_CARDS[tarot_card]
+
     readings = {
         "Health": [
             f"Ah, {user_name}, the cards speak clearly. As a {zodiac_sign}, your {zodiac_trait} nature influences your physical well-being. ",
-            f"The {tarot_card} card reveals that {TAROT_CARDS[tarot_card]} is calling to you. Your body is trying to communicate something important. ",
+            f"The {tarot_card} card reveals that {tarot_meaning} is calling to you. Your body is trying to communicate something important. ",
             f"The cosmic dice shows {dice_num}, which in ancient numerology represents the {['foundation', 'balance', 'creativity', 'stability', 'change', 'harmony'][dice_num-1]} you need in your health journey. ",
             f"The {orb_color} orb that appeared to you is no coincidence - it represents the energy surrounding your vitality. ",
             f"As someone born in the Year of the {chinese_animal}, you possess {chinese_trait} qualities that can aid your healing. ",
@@ -280,7 +285,7 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
         ],
         "Wealth": [
             f"Welcome, {user_name}. The spirits of prosperity are stirring around you. As a {zodiac_sign}, your {zodiac_trait} energy attracts certain financial opportunities. ",
-            f"The {tarot_card} appeared for a reason - {TAROT_CARDS[tarot_card]} is the key to unlocking your abundance. ",
+            f"The {tarot_card} appeared for a reason - {tarot_meaning} is the key to unlocking your abundance. ",
             f"The cosmic dice revealed {dice_num}, a powerful number that signals {['new foundations', 'partnerships', 'expansion', 'hard work', 'unexpected changes', 'balance'][dice_num-1]} in your financial realm. ",
             f"The {orb_color} energy you released shows the current state of your material manifestations. ",
             f"Your Chinese zodiac, the {chinese_animal}, makes you {chinese_trait} - traits that can be leveraged for prosperity. ",
@@ -290,7 +295,7 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
         ],
         "Relationship": [
             f"Ah, matters of the heart, {user_name}. Being a {zodiac_sign}, you approach love with {zodiac_trait} intensity. ",
-            f"The {tarot_card} card has chosen you, revealing that {TAROT_CARDS[tarot_card]} is at the center of your romantic destiny. ",
+            f"The {tarot_card} card has chosen you, revealing that {tarot_meaning} is at the center of your romantic destiny. ",
             f"The dice speaks - {dice_num} represents {['new beginnings', 'union', 'joy', 'foundation', 'freedom', 'harmony'][dice_num-1]} in the language of love. ",
             f"The {orb_color} orb reflects the energy you're projecting in your relationships - pay attention to its message. ",
             f"As the {chinese_animal}, you are {chinese_trait}, which deeply influences how you connect with others. ",
@@ -300,7 +305,7 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
         ],
         "Empowerment": [
             f"Greetings, {user_name}. Your quest for empowerment has brought you here. As a {zodiac_sign}, {zodiac_trait} power flows through you. ",
-            f"The {tarot_card} has revealed itself, showing that {TAROT_CARDS[tarot_card]} is your path to personal sovereignty. ",
+            f"The {tarot_card} has revealed itself, showing that {tarot_meaning} is your path to personal sovereignty. ",
             f"The cosmic dice displays {dice_num} - in the ancient wisdom, this number embodies {['independence', 'choice', 'expression', 'structure', 'liberation', 'responsibility'][dice_num-1]}. ",
             f"The {orb_color} light you unveiled represents the strength already within you, waiting to be acknowledged. ",
             f"Born under the {chinese_animal}, you are naturally {chinese_trait} - embrace these qualities fully. ",
@@ -315,7 +320,11 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
 
     return full_reading
 
-# Main app header
+# Main app header with vintage landing image
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.image("IMG-20251220-WA0000.jpg", use_container_width=True)
+
 st.markdown('<div class="main-title">🔮 MISZTIKUS SZANA</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">✨ Ancient Wisdom from the Mystic Realms ✨</div>', unsafe_allow_html=True)
 
@@ -408,25 +417,29 @@ elif st.session_state.stage == 'choose_topic':
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        if st.button("❤️ Health", use_container_width=True):
+        st.image("IMG-20251220-WA0001.jpg", use_container_width=True)
+        if st.button("Select Health", key="health_btn", use_container_width=True):
             st.session_state.selected_topic = 'Health'
             st.session_state.stage = 'get_info'
             st.rerun()
 
     with col2:
-        if st.button("💰 Wealth", use_container_width=True):
+        st.image("IMG-20251220-WA0002.jpg", use_container_width=True)
+        if st.button("Select Wealth", key="wealth_btn", use_container_width=True):
             st.session_state.selected_topic = 'Wealth'
             st.session_state.stage = 'get_info'
             st.rerun()
 
     with col3:
-        if st.button("💕 Relationship", use_container_width=True):
+        st.image("IMG-20251220-WA0003.jpg", use_container_width=True)
+        if st.button("Select Relationship", key="relationship_btn", use_container_width=True):
             st.session_state.selected_topic = 'Relationship'
             st.session_state.stage = 'get_info'
             st.rerun()
 
     with col4:
-        if st.button("⚡ Empowerment", use_container_width=True):
+        st.image("IMG-20251220-WA0004.jpg", use_container_width=True)
+        if st.button("Select Empowerment", key="empowerment_btn", use_container_width=True):
             st.session_state.selected_topic = 'Empowerment'
             st.session_state.stage = 'get_info'
             st.rerun()
@@ -466,23 +479,66 @@ elif st.session_state.stage == 'tarot':
     </div>
     """, unsafe_allow_html=True)
 
-    # Display tarot cards
+    # Display tarot cards in 4 rows x 6 columns
     cards = list(TAROT_CARDS.keys())
 
-    cols = st.columns(6)
-    for idx, card in enumerate(cards[:12]):
-        with cols[idx % 6]:
-            if st.button("🎴", key=f"card_{idx}", use_container_width=True):
-                st.session_state.selected_card = card
+    # Custom CSS for card styling
+    st.markdown("""
+    <style>
+    div[data-testid="column"] button {
+        height: 180px !important;
+        padding: 20px 10px !important;
+        font-size: 3em !important;
+        line-height: 1.2 !important;
+        white-space: pre-line !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Row 1
+    cols1 = st.columns(6)
+    for idx in range(6):
+        card_name = cards[idx]
+        symbol, meaning = TAROT_CARDS[card_name]
+        with cols1[idx]:
+            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
+                st.session_state.selected_card = card_name
                 st.session_state.tarot_selected = True
                 st.session_state.stage = 'dice'
                 st.rerun()
 
+    # Row 2
     cols2 = st.columns(6)
-    for idx, card in enumerate(cards[12:], start=12):
-        with cols2[idx % 6]:
-            if st.button("🎴", key=f"card_{idx}", use_container_width=True):
-                st.session_state.selected_card = card
+    for idx in range(6, 12):
+        card_name = cards[idx]
+        symbol, meaning = TAROT_CARDS[card_name]
+        with cols2[idx - 6]:
+            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
+                st.session_state.selected_card = card_name
+                st.session_state.tarot_selected = True
+                st.session_state.stage = 'dice'
+                st.rerun()
+
+    # Row 3
+    cols3 = st.columns(6)
+    for idx in range(12, 18):
+        card_name = cards[idx]
+        symbol, meaning = TAROT_CARDS[card_name]
+        with cols3[idx - 12]:
+            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
+                st.session_state.selected_card = card_name
+                st.session_state.tarot_selected = True
+                st.session_state.stage = 'dice'
+                st.rerun()
+
+    # Row 4
+    cols4 = st.columns(6)
+    for idx in range(18, 24):
+        card_name = cards[idx]
+        symbol, meaning = TAROT_CARDS[card_name]
+        with cols4[idx - 18]:
+            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
+                st.session_state.selected_card = card_name
                 st.session_state.tarot_selected = True
                 st.session_state.stage = 'dice'
                 st.rerun()
@@ -497,7 +553,27 @@ elif st.session_state.stage == 'dice':
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='text-align: center; font-size: 5em; margin: 30px;'>🎲</div>", unsafe_allow_html=True)
+    # Cosmic dice with astrological symbols
+    st.markdown("""
+    <div style='text-align: center; margin: 30px;'>
+        <div style='
+            display: inline-block;
+            background: linear-gradient(135deg, #1a0066, #4d0099);
+            border: 4px solid #d4af37;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 40px rgba(138, 43, 226, 0.6);
+        '>
+            <div style='font-size: 8em; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);'>🎲</div>
+            <div style='
+                font-size: 1.5em;
+                color: #ffd700;
+                margin-top: 10px;
+                font-family: "Cinzel", serif;
+            '>♈ ♉ ♊ ♋ ♌ ♍</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     if st.button("🌟 Spin the Cosmic Dice", use_container_width=True):
         st.session_state.dice_result = random.randint(1, 6)
@@ -515,7 +591,27 @@ elif st.session_state.stage == 'orb':
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div style='text-align: center; font-size: 6em; margin: 30px;'>🔮</div>", unsafe_allow_html=True)
+    # Double-sized cosmic orb
+    st.markdown("""
+    <div style='text-align: center; margin: 40px;'>
+        <div style='
+            display: inline-block;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.4), rgba(75, 0, 130, 0.2));
+            border-radius: 50%;
+            padding: 40px;
+            box-shadow: 0 0 60px rgba(138, 43, 226, 0.8), 0 0 100px rgba(75, 0, 130, 0.5);
+            animation: pulse 2s infinite;
+        '>
+            <div style='font-size: 12em; text-shadow: 0 0 30px rgba(138, 43, 226, 0.8);'>🔮</div>
+        </div>
+    </div>
+    <style>
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
     if st.button("💫 Burst the Cosmic Orb", use_container_width=True):
         colors = ["violet", "indigo", "azure", "golden", "crimson", "emerald"]
