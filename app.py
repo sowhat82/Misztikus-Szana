@@ -176,32 +176,32 @@ if 'dice_result' not in st.session_state:
 if 'orb_result' not in st.session_state:
     st.session_state.orb_result = None
 
-# Tarot card meanings with visual symbols
+# Tarot card meanings with visual symbols and short labels
 TAROT_CARDS = {
-    "The Sun": ("☀️", "joy and success"),
-    "The Star": ("⭐", "hope and renewal"),
-    "The Moon": ("🌙", "illusion and intuition"),
-    "Yin Yang": ("☯️", "balance and harmony"),
-    "The Fire": ("🔥", "passion and transformation"),
-    "The Eye": ("👁️", "insight and awareness"),
-    "The Cosmos": ("🌌", "infinite possibilities"),
-    "The North Star": ("⭐", "guidance and direction"),
-    "The Planet": ("🪐", "cycles and expansion"),
-    "The Phoenix": ("🔥", "rebirth and renewal"),
-    "The Teal Sun": ("🌞", "vitality and energy"),
-    "The Red Sun": ("☀️", "power and strength"),
-    "The Crystal": ("💎", "clarity and truth"),
-    "The Sacred Eye": ("👁️", "divine wisdom"),
-    "The Serpent": ("🐍", "transformation and healing"),
-    "The Crescent": ("🌙", "intuition and mystery"),
-    "The Lovers": ("💑", "harmony and choices"),
-    "The Hermit": ("🕯️", "soul searching and introspection"),
-    "The Chariot": ("⚡", "willpower and determination"),
-    "The Tower": ("🗼", "sudden change and revelation"),
-    "The Wheel": ("☸️", "good luck and karma"),
-    "The Magician": ("✨", "manifestation and resourcefulness"),
-    "The Empress": ("👑", "abundance and nurturing"),
-    "The Fool": ("🎭", "new beginnings and spontaneous adventures")
+    "The Sun": ("☉", "joy and success", "Sun"),
+    "The Star": ("★", "hope and renewal", "Star"),
+    "The Moon": ("☽", "illusion and intuition", "Moon"),
+    "Yin Yang": ("☯", "balance and harmony", "Balance"),
+    "The Fire": ("🜂", "passion and transformation", "Fire"),
+    "The Eye": ("◉", "insight and awareness", "Eye"),
+    "The Cosmos": ("✦", "infinite possibilities", "Cosmos"),
+    "The North Star": ("✧", "guidance and direction", "N-Star"),
+    "The Planet": ("♃", "cycles and expansion", "Planet"),
+    "The Phoenix": ("Ψ", "rebirth and renewal", "Phoenix"),
+    "The Teal Sun": ("☼", "vitality and energy", "T-Sun"),
+    "The Red Sun": ("⊙", "power and strength", "R-Sun"),
+    "The Crystal": ("◆", "clarity and truth", "Crystal"),
+    "The Sacred Eye": ("⊕", "divine wisdom", "S-Eye"),
+    "The Serpent": ("∿", "transformation and healing", "Serpent"),
+    "The Crescent": ("☾", "intuition and mystery", "Crescent"),
+    "The Lovers": ("♡", "harmony and choices", "Lovers"),
+    "The Hermit": ("✵", "soul searching and introspection", "Hermit"),
+    "The Chariot": ("⚡", "willpower and determination", "Chariot"),
+    "The Tower": ("△", "sudden change and revelation", "Tower"),
+    "The Wheel": ("☸", "good luck and karma", "Wheel"),
+    "The Magician": ("✹", "manifestation and resourcefulness", "Magician"),
+    "The Empress": ("♕", "abundance and nurturing", "Empress"),
+    "The Fool": ("◯", "new beginnings and spontaneous adventures", "Fool")
 }
 
 # Chinese Zodiac
@@ -270,7 +270,7 @@ def generate_reading(topic, user_name, birth_date, tarot_card, dice_num, orb_col
     chinese_animal, chinese_trait = get_chinese_zodiac(birth_date)
 
     # Get tarot card meaning
-    tarot_symbol, tarot_meaning = TAROT_CARDS[tarot_card]
+    tarot_symbol, tarot_meaning, tarot_label = TAROT_CARDS[tarot_card]
 
     readings = {
         "Health": [
@@ -479,69 +479,25 @@ elif st.session_state.stage == 'tarot':
     </div>
     """, unsafe_allow_html=True)
 
-    # Display tarot cards in 4 rows x 6 columns
+    # Display tarot cards in grid
     cards = list(TAROT_CARDS.keys())
 
-    # Custom CSS for card styling
-    st.markdown("""
-    <style>
-    div[data-testid="column"] button {
-        height: 180px !important;
-        padding: 20px 10px !important;
-        font-size: 3em !important;
-        line-height: 1.2 !important;
-        white-space: pre-line !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Row 1
-    cols1 = st.columns(6)
-    for idx in range(6):
-        card_name = cards[idx]
-        symbol, meaning = TAROT_CARDS[card_name]
-        with cols1[idx]:
-            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
-                st.session_state.selected_card = card_name
-                st.session_state.tarot_selected = True
-                st.session_state.stage = 'dice'
-                st.rerun()
-
-    # Row 2
-    cols2 = st.columns(6)
-    for idx in range(6, 12):
-        card_name = cards[idx]
-        symbol, meaning = TAROT_CARDS[card_name]
-        with cols2[idx - 6]:
-            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
-                st.session_state.selected_card = card_name
-                st.session_state.tarot_selected = True
-                st.session_state.stage = 'dice'
-                st.rerun()
-
-    # Row 3
-    cols3 = st.columns(6)
-    for idx in range(12, 18):
-        card_name = cards[idx]
-        symbol, meaning = TAROT_CARDS[card_name]
-        with cols3[idx - 12]:
-            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
-                st.session_state.selected_card = card_name
-                st.session_state.tarot_selected = True
-                st.session_state.stage = 'dice'
-                st.rerun()
-
-    # Row 4
-    cols4 = st.columns(6)
-    for idx in range(18, 24):
-        card_name = cards[idx]
-        symbol, meaning = TAROT_CARDS[card_name]
-        with cols4[idx - 18]:
-            if st.button(f"{symbol}\n🎴", key=f"card_{idx}", use_container_width=True):
-                st.session_state.selected_card = card_name
-                st.session_state.tarot_selected = True
-                st.session_state.stage = 'dice'
-                st.rerun()
+    # Display 6 rows of 4 cards each with symbols and short labels
+    for row in range(6):
+        cols = st.columns(4, gap="small")
+        for col_idx in range(4):
+            card_idx = row * 4 + col_idx
+            if card_idx < len(cards):
+                card_name = cards[card_idx]
+                symbol, meaning, label = TAROT_CARDS[card_name]
+                with cols[col_idx]:
+                    # Symbol + short label for uniform card appearance
+                    button_text = f"{symbol}\n{label}"
+                    if st.button(button_text, key=f"card_{card_idx}", use_container_width=True):
+                        st.session_state.selected_card = card_name
+                        st.session_state.tarot_selected = True
+                        st.session_state.stage = 'dice'
+                        st.rerun()
 
 # Cosmic dice stage
 elif st.session_state.stage == 'dice':
@@ -553,27 +509,10 @@ elif st.session_state.stage == 'dice':
     </div>
     """, unsafe_allow_html=True)
 
-    # Cosmic dice with astrological symbols
-    st.markdown("""
-    <div style='text-align: center; margin: 30px;'>
-        <div style='
-            display: inline-block;
-            background: linear-gradient(135deg, #1a0066, #4d0099);
-            border: 4px solid #d4af37;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 0 40px rgba(138, 43, 226, 0.6);
-        '>
-            <div style='font-size: 8em; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);'>🎲</div>
-            <div style='
-                font-size: 1.5em;
-                color: #ffd700;
-                margin-top: 10px;
-                font-family: "Cinzel", serif;
-            '>♈ ♉ ♊ ♋ ♌ ♍</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Cosmic dice image with transparent background
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.image("cosmic_dice.png", use_container_width=True)
 
     if st.button("🌟 Spin the Cosmic Dice", use_container_width=True):
         st.session_state.dice_result = random.randint(1, 6)
