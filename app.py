@@ -335,25 +335,77 @@ with col2:
 st.markdown('<div class="main-title">🔮 MISZTIKUS SZANA</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">✨ Ancient Wisdom from the Mystic Realms ✨</div>', unsafe_allow_html=True)
 
+# Promotional text and registration
+st.markdown("""
+<div style='text-align: center; margin: 20px 0;'>
+    <p style='font-family: "Cinzel", serif; font-size: 1.2em; color: #d4af37; margin-bottom: 10px;'>
+        The #1 app for self-reflection, personal growth and metaphysical guidance.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+# Registration form (only show if not registered)
+if 'registered' not in st.session_state:
+    st.session_state.registered = False
+    st.session_state.user_email = ""
+    st.session_state.user_mobile = ""
+
+if not st.session_state.registered:
+    st.markdown("""
+    <div style='text-align: center; margin: 30px 0;'>
+        <h2 style='font-family: "Cinzel", serif; color: #ffd700; font-size: 2em;'>Try it Free</h2>
+        <p style='font-family: "Cinzel", serif; font-size: 1.3em; color: #d4af37; margin: 10px 0;'>
+            Register now and receive 3 tokens FREE
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.form("registration_form"):
+        username = st.text_input("Username", placeholder="Enter your username")
+        email = st.text_input("Email", placeholder="Enter your email address")
+        mobile = st.text_input("Mobile", placeholder="Enter your mobile number")
+
+        submitted = st.form_submit_button("Register & Get 3 Free Tokens", use_container_width=True)
+
+        if submitted:
+            if username and email and mobile:
+                st.session_state.user_name = username
+                st.session_state.user_email = email
+                st.session_state.user_mobile = mobile
+                st.session_state.registered = True
+                st.session_state.tokens += 3  # Award 3 free tokens
+                st.success(f"Welcome {username}! 3 free tokens have been added to your account!")
+                st.rerun()
+            else:
+                st.error("Please fill in all fields to register.")
+
 # Token display
 st.markdown(f'<div class="token-display">💰 Your Tokens: {st.session_state.tokens} 💰</div>', unsafe_allow_html=True)
 
 # Sidebar for token purchase and games
 with st.sidebar:
     st.markdown("### 💰 Token Shop")
-    st.markdown("Purchase tokens to unlock readings")
-    st.markdown("**$1 per token**")
+    st.markdown("**Buy tokens and receive a FREE GIFT from Misztikus Szana**")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Buy 5 Tokens"):
-            st.session_state.tokens += 5
-            st.success("5 tokens added!")
-            st.rerun()
-    with col2:
-        if st.button("Buy 10 Tokens"):
-            st.session_state.tokens += 10
-            st.success("10 tokens added!")
+    # Token packages with free gifts
+    token_packages = [
+        (10, "2 bonus tokens 🎁"),
+        (80, "Bracelet 📿"),
+        (90, "Candle 🕯️"),
+        (120, "Crystal 💎"),
+        (150, "Mandala 🪷"),
+        (180, "Scarf 🧣"),
+        (200, "Parfum 🌸")
+    ]
+
+    for tokens, gift in token_packages:
+        if st.button(f"Buy {tokens} Tokens - {gift}", use_container_width=True):
+            if tokens == 10:
+                st.session_state.tokens += 12  # 10 + 2 bonus
+                st.success(f"12 tokens added! (10 + 2 bonus tokens)")
+            else:
+                st.session_state.tokens += tokens
+                st.success(f"{tokens} tokens added! You'll receive your {gift} gift!")
             st.rerun()
 
     st.markdown("---")
