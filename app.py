@@ -464,8 +464,9 @@ if not st.session_state.registered:
             else:
                 st.error("Please fill in all fields to register.")
 
-# Token display
-st.markdown(f'<div class="token-display">💰 Your Tokens: {st.session_state.tokens} 💰</div>', unsafe_allow_html=True)
+# Token display - only show after registration
+if st.session_state.registered:
+    st.markdown(f'<div class="token-display">💰 Your Tokens: {st.session_state.tokens} 💰</div>', unsafe_allow_html=True)
 
 # Sidebar for token purchase and games
 with st.sidebar:
@@ -510,29 +511,30 @@ with st.sidebar:
             st.session_state.session_readings = 0
             st.rerun()
 
-# Welcome stage
+# Welcome stage - only show after registration
 if st.session_state.stage == 'welcome':
-    st.markdown("""
-    <div class="szana-speech">
-        "Hello, I'm glad you're here. I'm going to take a moment to tune into your energy..."
-        <br><br>
-        <i>*The crystal ball glows with ethereal light*</i>
-        <br><br>
-        "Now, are you prepared to hear insights that might challenge your current perspective?"
-    </div>
-    """, unsafe_allow_html=True)
+    if st.session_state.registered:
+        st.markdown("""
+        <div class="szana-speech">
+            "Hello, I'm glad you're here. I'm going to take a moment to tune into your energy..."
+            <br><br>
+            <i>*The crystal ball glows with ethereal light*</i>
+            <br><br>
+            "Now, are you prepared to hear insights that might challenge your current perspective?"
+        </div>
+        """, unsafe_allow_html=True)
 
-    col1, col2, col3 = st.columns([1, 1, 1])
+        col1, col2, col3 = st.columns([1, 1, 1])
 
-    with col1:
-        if st.button("✨ Yes, I'm Ready", use_container_width=True):
-            st.session_state.stage = 'choose_topic'
-            st.rerun()
+        with col1:
+            if st.button("✨ Yes, I'm Ready", use_container_width=True):
+                st.session_state.stage = 'choose_topic'
+                st.rerun()
 
-    with col3:
-        if st.button("🥠 No, Just a Fortune Cookie", use_container_width=True):
-            st.session_state.stage = 'fortune_cookie'
-            st.rerun()
+        with col3:
+            if st.button("🥠 No, Just a Fortune Cookie", use_container_width=True):
+                st.session_state.stage = 'fortune_cookie'
+                st.rerun()
 
 # Fortune cookie stage
 elif st.session_state.stage == 'fortune_cookie':
