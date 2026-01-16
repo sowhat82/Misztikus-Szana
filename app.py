@@ -2,6 +2,84 @@ import streamlit as st
 import random
 from datetime import datetime
 import calendar
+import os
+from dotenv import load_dotenv
+from supabase import create_client, Client
+
+# Load environment variables
+load_dotenv()
+
+# Supabase connection
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+@st.cache_resource
+def get_supabase_client():
+    """Create and cache Supabase client"""
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+supabase: Client = get_supabase_client()
+
+def save_user(username, email, mobile, tokens=3):
+    """Save new user to Supabase"""
+    try:
+        data = {
+            "username": username,
+            "email": email,
+            "mobile": mobile,
+            "tokens": tokens
+        }
+        supabase.table("users").insert(data).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error saving user: {e}")
+        return False
+
+def update_user_info(username, name, birth_date):
+    """Update user's name and birth date in Supabase"""
+    try:
+        data = {
+            "name": name,
+            "birth_date": str(birth_date) if birth_date else None
+        }
+        supabase.table("users").update(data).eq("username", username).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error updating user: {e}")
+        return False
+
+def save_reading(username, category, tarot_card, dice_result, orb_color, reading):
+    """Save reading to Supabase for uniqueness tracking"""
+    try:
+        data = {
+            "username": username,
+            "category": category,
+            "tarot_card": tarot_card,
+            "dice_result": dice_result,
+            "orb_color": orb_color,
+            "reading": reading[:500]  # Limit to 500 chars
+        }
+        supabase.table("readings").insert(data).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error saving reading: {e}")
+        return False
+
+def get_all_readings():
+    """Get all previous readings to ensure uniqueness"""
+    try:
+        response = supabase.table("readings").select("*").execute()
+        return response.data
+    except Exception as e:
+        return []
+
+def username_exists(username):
+    """Check if username already exists in Supabase"""
+    try:
+        response = supabase.table("users").select("username").eq("username", username).execute()
+        return len(response.data) > 0
+    except Exception as e:
+        return False
 
 # Page configuration
 st.set_page_config(
@@ -369,13 +447,20 @@ if not st.session_state.registered:
 
         if submitted:
             if username and email and mobile:
-                st.session_state.user_name = username
-                st.session_state.user_email = email
-                st.session_state.user_mobile = mobile
-                st.session_state.registered = True
-                st.session_state.tokens += 3  # Award 3 free tokens
-                st.success(f"Welcome {username}! 3 free tokens have been added to your account!")
-                st.rerun()
+                # Check if username already exists
+                if username_exists(username):
+                    st.error("Username already taken. Please choose a different username.")
+                else:
+                    # Save to CSV file
+                    save_user(username, email, mobile, tokens=3)
+
+                    st.session_state.user_name = username
+                    st.session_state.user_email = email
+                    st.session_state.user_mobile = mobile
+                    st.session_state.registered = True
+                    st.session_state.tokens += 3  # Award 3 free tokens
+                    st.success(f"Welcome {username}! 3 free tokens have been added to your account!")
+                    st.rerun()
             else:
                 st.error("Please fill in all fields to register.")
 
@@ -411,7 +496,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 🎮 Earn Free Tokens")
 
-    if st.button("🐱 Feed My Cat"):
+    if st.button("🐱 Feed Szana's cat: Shadow"):
         st.session_state.stage = 'feed_cat'
         st.rerun()
 
@@ -525,6 +610,9 @@ elif st.session_state.stage == 'get_info':
         else:
             st.session_state.user_name = name
             st.session_state.birth_date = birth_date
+            # Update user info in CSV (name and birth_date)
+            if st.session_state.registered and hasattr(st.session_state, 'user_email'):
+                update_user_info(st.session_state.get('user_name', name), name, birth_date)
             st.session_state.stage = 'tarot'
             st.rerun()
 
@@ -659,6 +747,16 @@ elif st.session_state.stage == 'generate_reading':
         st.session_state.orb_result
     )
 
+    # Save reading to CSV for admin tracking and uniqueness
+    save_reading(
+        st.session_state.get('user_name', 'anonymous'),
+        st.session_state.selected_topic,
+        st.session_state.selected_card,
+        st.session_state.dice_result,
+        st.session_state.orb_result,
+        reading
+    )
+
     st.markdown(f"""
     <div class="szana-speech">
         "Ahhhh... The {st.session_state.orb_result} light emerges! The veil between worlds grows thin..."
@@ -696,7 +794,7 @@ elif st.session_state.stage == 'reading_complete':
 
 # Feed the cat game
 elif st.session_state.stage == 'feed_cat':
-    st.markdown('<div class="main-title">🐱 Feed Szana\'s Cat 🐱</div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">🐱 Feed Szana\'s Cat: Shadow 🐱</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="szana-speech">
