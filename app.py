@@ -127,6 +127,7 @@ def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
     """Create a Stripe checkout session for token purchase"""
     try:
         username = st.session_state.get('user_name', 'guest')
+        user_email = st.session_state.get('user_email', '')
 
         # Create line item description
         if tokens == 10:
@@ -134,9 +135,10 @@ def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
         else:
             description = f"{tokens} Tokens + {gift_description}"
 
-        # URL encode the username to handle special characters
+        # URL encode the username and email to handle special characters
         from urllib.parse import quote
         encoded_username = quote(username)
+        encoded_email = quote(user_email)
 
         checkout_session = stripe.checkout.Session.create(
             line_items=[{
@@ -152,11 +154,12 @@ def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
             }],
             mode='payment',
             payment_method_types=['card'],
-            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}&username={encoded_username}',
+            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}&username={encoded_username}&email={encoded_email}',
             cancel_url=f'{APP_BASE_URL}/?payment=cancelled',
             metadata={
                 'tokens': tokens,
-                'username': username
+                'username': username,
+                'email': user_email
             }
         )
         return checkout_session.url
@@ -349,12 +352,23 @@ from urllib.parse import unquote
 query_params = st.query_params
 if 'payment' in query_params:
     payment_status = query_params['payment']
-    if payment_status == 'success' and 'tokens' in query_params and 'username' in query_params:
+    if payment_status == 'success' and 'tokens' in query_params:
         tokens = int(query_params['tokens'])
-        username = unquote(query_params['username'])
+        username = unquote(query_params.get('username', ''))
+        email = unquote(query_params.get('email', ''))
 
-        # Get user's current token balance from database
-        user = get_user(username)
+        # Try to get user by username first, then by email as fallback
+        user = get_user(username) if username else None
+
+        if not user and email:
+            # Fallback: find user by email
+            try:
+                response = supabase.table("users").select("*").eq("email", email).execute()
+                if response.data and len(response.data) > 0:
+                    user = response.data[0]
+            except:
+                pass
+
         if user:
             current_tokens = user.get('tokens', 0)
 
@@ -366,8 +380,8 @@ if 'payment' in query_params:
                 new_tokens = current_tokens + tokens
                 tokens_added = tokens
 
-            # Update database
-            update_user_tokens(username, new_tokens)
+            # Update database using the actual username from the found user
+            update_user_tokens(user['username'], new_tokens)
 
             # Automatically log the user back in
             st.session_state.user_name = user['username']
@@ -384,18 +398,19 @@ if 'payment' in query_params:
 
             # Show all users for debugging (admin view)
             try:
-                all_users = supabase.table("users").select("username").execute()
-                usernames_in_db = [u['username'] for u in all_users.data]
+                all_users = supabase.table("users").select("username, email").execute()
+                usernames_in_db = [f"{u['username']} ({u.get('email', 'no email')})" for u in all_users.data]
                 st.info(f"""
                 **Support Information:**
-                - Username from payment: `{username}`
+                - Username from payment: `{username if username else 'None'}`
+                - Email from payment: `{email if email else 'None'}`
                 - Tokens purchased: {tokens} ({tokens + 2 if tokens == 10 else tokens} with bonus)
-                - Available usernames in system: {', '.join(usernames_in_db)}
+                - Users in system: {', '.join(usernames_in_db)}
 
                 Please login with your correct username and contact support with this information.
                 """)
             except:
-                st.info(f"Username from payment: `{username}`, Tokens: {tokens}")
+                st.info(f"Username: `{username}`, Email: `{email}`, Tokens: {tokens}")
 
         # Clear query params
         st.query_params.clear()
