@@ -631,8 +631,14 @@ with st.sidebar:
             # Create Stripe checkout session
             checkout_url = create_stripe_checkout_session(tokens, price_cents, gift)
             if checkout_url:
-                st.markdown(f'<meta http-equiv="refresh" content="0;url={checkout_url}">', unsafe_allow_html=True)
-                st.info("Redirecting to secure payment...")
+                # Use JavaScript redirect which is more reliable
+                st.markdown(f"""
+                <script>
+                    window.location.href = "{checkout_url}";
+                </script>
+                """, unsafe_allow_html=True)
+                st.success("Redirecting to Stripe checkout...")
+                st.markdown(f"If you're not redirected, [click here]({checkout_url})")
             else:
                 st.error("Unable to process payment. Please try again.")
 
