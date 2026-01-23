@@ -5,6 +5,7 @@ import calendar
 import os
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import stripe
 
 # Load environment variables
 load_dotenv()
@@ -12,6 +13,14 @@ load_dotenv()
 # Supabase connection
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+# Stripe configuration
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = STRIPE_SECRET_KEY
+
+# App configuration
+APP_BASE_URL = os.getenv("APP_BASE_URL", "http://localhost:8501")
 
 @st.cache_resource
 def get_supabase_client():
@@ -80,6 +89,61 @@ def username_exists(username):
         return len(response.data) > 0
     except Exception as e:
         return False
+
+def get_user(username):
+    """Retrieve user data from Supabase by username"""
+    try:
+        response = supabase.table("users").select("*").eq("username", username).execute()
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+        return None
+    except Exception as e:
+        st.error(f"Error retrieving user: {e}")
+        return None
+
+def update_user_tokens(username, tokens):
+    """Update user's token balance in Supabase"""
+    try:
+        supabase.table("users").update({"tokens": tokens}).eq("username", username).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error updating tokens: {e}")
+        return False
+
+def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
+    """Create a Stripe checkout session for token purchase"""
+    try:
+        # Create line item description
+        if tokens == 10:
+            description = f"{tokens} Tokens + 2 Bonus Tokens (12 total)"
+        else:
+            description = f"{tokens} Tokens + {gift_description}"
+
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'unit_amount': price_in_cents,
+                    'product_data': {
+                        'name': description,
+                        'description': f'Misztikus Szana Token Package',
+                    },
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}',
+            cancel_url=f'{APP_BASE_URL}/?payment=cancelled',
+            metadata={
+                'tokens': tokens,
+                'username': st.session_state.get('user_name', 'guest')
+            }
+        )
+        return checkout_session.url
+    except Exception as e:
+        st.error(f"Error creating checkout session: {e}")
+        return None
 
 # Page configuration
 st.set_page_config(
@@ -261,6 +325,31 @@ if 'dice_result' not in st.session_state:
 if 'orb_result' not in st.session_state:
     st.session_state.orb_result = None
 
+# Handle payment success/failure from Stripe
+query_params = st.query_params
+if 'payment' in query_params:
+    payment_status = query_params['payment']
+    if payment_status == 'success' and 'tokens' in query_params:
+        tokens = int(query_params['tokens'])
+        if tokens == 10:
+            st.session_state.tokens += 12  # 10 + 2 bonus
+            # Save to database
+            if st.session_state.get('user_name'):
+                update_user_tokens(st.session_state.user_name, st.session_state.tokens)
+            st.success("🎉 Payment successful! 12 tokens added to your account (10 + 2 bonus)")
+        else:
+            st.session_state.tokens += tokens
+            # Save to database
+            if st.session_state.get('user_name'):
+                update_user_tokens(st.session_state.user_name, st.session_state.tokens)
+            st.success(f"🎉 Payment successful! {tokens} tokens added to your account!")
+        # Clear query params
+        st.query_params.clear()
+        st.rerun()
+    elif payment_status == 'cancelled':
+        st.warning("Payment was cancelled. No tokens were added.")
+        st.query_params.clear()
+
 # Tarot card meanings with visual symbols and short labels
 TAROT_CARDS = {
     "The Sun": ("☉", "joy and success", "Sun"),
@@ -431,38 +520,66 @@ if 'registered' not in st.session_state:
 if not st.session_state.registered:
     st.markdown("""
     <div style='text-align: center; margin: 30px 0;'>
-        <h2 style='font-family: "Cinzel", serif; color: #ffd700; font-size: 2em;'>Try it Free</h2>
+        <h2 style='font-family: "Cinzel", serif; color: #ffd700; font-size: 2em;'>Welcome</h2>
         <p style='font-family: "Cinzel", serif; font-size: 1.3em; color: #d4af37; margin: 10px 0;'>
-            Register now and receive 3 tokens FREE
+            Login or Register to get started
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    with st.form("registration_form"):
-        username = st.text_input("Username", placeholder="Enter your username")
-        email = st.text_input("Email", placeholder="Enter your email address")
-        mobile = st.text_input("Mobile", placeholder="Enter your mobile number")
+    tab1, tab2 = st.tabs(["🔑 Login", "✨ Register (Get 3 Free Tokens)"])
 
-        submitted = st.form_submit_button("Register & Get 3 Free Tokens", use_container_width=True)
+    with tab1:
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.form("login_form"):
+            login_username = st.text_input("Username", placeholder="Enter your username", key="login_username")
 
-        if submitted:
-            if username and email and mobile:
-                # Check if username already exists
-                if username_exists(username):
-                    st.error("Username already taken. Please choose a different username.")
+            login_submitted = st.form_submit_button("Login", use_container_width=True)
+
+            if login_submitted:
+                if login_username:
+                    user = get_user(login_username)
+                    if user:
+                        # Load user data from database
+                        st.session_state.user_name = user['username']
+                        st.session_state.user_email = user.get('email', '')
+                        st.session_state.user_mobile = user.get('mobile', '')
+                        st.session_state.tokens = user.get('tokens', 0)
+                        st.session_state.registered = True
+                        st.success(f"Welcome back, {user['username']}! You have {user.get('tokens', 0)} tokens.")
+                        st.rerun()
+                    else:
+                        st.error("Username not found. Please check your username or register as a new user.")
                 else:
-                    # Save to CSV file
-                    save_user(username, email, mobile, tokens=3)
+                    st.error("Please enter your username.")
 
-                    st.session_state.user_name = username
-                    st.session_state.user_email = email
-                    st.session_state.user_mobile = mobile
-                    st.session_state.registered = True
-                    st.session_state.tokens += 3  # Award 3 free tokens
-                    st.success(f"Welcome {username}! 3 free tokens have been added to your account!")
-                    st.rerun()
-            else:
-                st.error("Please fill in all fields to register.")
+    with tab2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        with st.form("registration_form"):
+            username = st.text_input("Username", placeholder="Choose a username", key="register_username")
+            email = st.text_input("Email", placeholder="Enter your email address", key="register_email")
+            mobile = st.text_input("Mobile", placeholder="Enter your mobile number", key="register_mobile")
+
+            submitted = st.form_submit_button("Register & Get 3 Free Tokens", use_container_width=True)
+
+            if submitted:
+                if username and email and mobile:
+                    # Check if username already exists
+                    if username_exists(username):
+                        st.error("Username already taken. Please choose a different username.")
+                    else:
+                        # Save to database
+                        save_user(username, email, mobile, tokens=3)
+
+                        st.session_state.user_name = username
+                        st.session_state.user_email = email
+                        st.session_state.user_mobile = mobile
+                        st.session_state.registered = True
+                        st.session_state.tokens = 3  # Award 3 free tokens
+                        st.success(f"Welcome {username}! 3 free tokens have been added to your account!")
+                        st.rerun()
+                else:
+                    st.error("Please fill in all fields to register.")
 
 # Token display - only show after registration
 if st.session_state.registered:
@@ -473,26 +590,27 @@ with st.sidebar:
     st.markdown("### 💰 Token Shop")
     st.markdown("**Buy tokens and receive a FREE GIFT from Misztikus Szana**")
 
-    # Token packages with free gifts
+    # Token packages with free gifts and prices (in USD cents)
     token_packages = [
-        (10, "2 bonus tokens 🎁"),
-        (80, "Bracelet 📿"),
-        (90, "Candle 🕯️"),
-        (120, "Crystal 💎"),
-        (150, "Mandala 🪷"),
-        (180, "Scarf 🧣"),
-        (200, "Parfum 🌸")
+        (10, "2 bonus tokens 🎁", 1000),      # $10.00
+        (80, "Bracelet 📿", 8000),            # $80.00
+        (90, "Candle 🕯️", 9000),             # $90.00
+        (120, "Crystal 💎", 12000),           # $120.00
+        (150, "Mandala 🪷", 15000),           # $150.00
+        (180, "Scarf 🧣", 18000),             # $180.00
+        (200, "Parfum 🌸", 20000)             # $200.00
     ]
 
-    for tokens, gift in token_packages:
-        if st.button(f"Buy {tokens} Tokens - {gift}", use_container_width=True):
-            if tokens == 10:
-                st.session_state.tokens += 12  # 10 + 2 bonus
-                st.success(f"12 tokens added! (10 + 2 bonus tokens)")
+    for tokens, gift, price_cents in token_packages:
+        price_dollars = price_cents / 100
+        if st.button(f"Buy {tokens} Tokens - {gift} (${price_dollars:.2f})", use_container_width=True):
+            # Create Stripe checkout session
+            checkout_url = create_stripe_checkout_session(tokens, price_cents, gift)
+            if checkout_url:
+                st.markdown(f'<meta http-equiv="refresh" content="0;url={checkout_url}">', unsafe_allow_html=True)
+                st.info("Redirecting to secure payment...")
             else:
-                st.session_state.tokens += tokens
-                st.success(f"{tokens} tokens added! You'll receive your {gift} gift!")
-            st.rerun()
+                st.error("Unable to process payment. Please try again.")
 
     st.markdown("---")
     st.markdown("### 🎮 Earn Free Tokens")
@@ -733,10 +851,16 @@ elif st.session_state.stage == 'generate_reading':
     # Deduct token
     st.session_state.tokens -= 1
     st.session_state.session_readings += 1
+    # Save to database
+    if st.session_state.get('user_name'):
+        update_user_tokens(st.session_state.user_name, st.session_state.tokens)
 
     # Check for bonus token
     if st.session_state.session_readings == 3:
         st.session_state.tokens += 1
+        # Save to database
+        if st.session_state.get('user_name'):
+            update_user_tokens(st.session_state.user_name, st.session_state.tokens)
         st.balloons()
         st.success("🎉 You've completed 3 readings! Bonus token awarded!")
 
@@ -819,6 +943,9 @@ elif st.session_state.stage == 'feed_cat':
             if st.button(treat, key=f"treat_{idx}", use_container_width=True):
                 if idx == correct:
                     st.session_state.tokens += 1
+                    # Save to database
+                    if st.session_state.get('user_name'):
+                        update_user_tokens(st.session_state.user_name, st.session_state.tokens)
                     st.success("🎉 Shadow loved it! You earned 1 token!")
                     st.balloons()
                 else:
@@ -855,6 +982,9 @@ elif st.session_state.stage == 'refer_friend':
 
     if st.button("Send Invitation") and email:
         st.session_state.tokens += 2
+        # Save to database
+        if st.session_state.get('user_name'):
+            update_user_tokens(st.session_state.user_name, st.session_state.tokens)
         st.success(f"Invitation sent to {email}! You earned 2 tokens!")
         st.balloons()
 
