@@ -121,21 +121,25 @@ def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
         else:
             description = f"{tokens} Tokens + {gift_description}"
 
+        # URL encode the username to handle special characters
+        from urllib.parse import quote
+        encoded_username = quote(username)
+
         checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
                     'unit_amount': price_in_cents,
                     'product_data': {
                         'name': description,
-                        'description': f'Misztikus Szana Token Package',
+                        'description': 'Misztikus Szana Token Package',
                     },
                 },
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}&username={username}',
+            automatic_payment_methods={'enabled': True},
+            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}&username={encoded_username}',
             cancel_url=f'{APP_BASE_URL}/?payment=cancelled',
             metadata={
                 'tokens': tokens,
@@ -328,12 +332,13 @@ if 'orb_result' not in st.session_state:
     st.session_state.orb_result = None
 
 # Handle payment success/failure from Stripe
+from urllib.parse import unquote
 query_params = st.query_params
 if 'payment' in query_params:
     payment_status = query_params['payment']
     if payment_status == 'success' and 'tokens' in query_params and 'username' in query_params:
         tokens = int(query_params['tokens'])
-        username = query_params['username']
+        username = unquote(query_params['username'])
 
         # Get user's current token balance from database
         user = get_user(username)
