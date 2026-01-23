@@ -113,6 +113,8 @@ def update_user_tokens(username, tokens):
 def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
     """Create a Stripe checkout session for token purchase"""
     try:
+        username = st.session_state.get('user_name', 'guest')
+
         # Create line item description
         if tokens == 10:
             description = f"{tokens} Tokens + 2 Bonus Tokens (12 total)"
@@ -133,11 +135,11 @@ def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}',
+            success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}&username={username}',
             cancel_url=f'{APP_BASE_URL}/?payment=cancelled',
             metadata={
                 'tokens': tokens,
-                'username': st.session_state.get('user_name', 'guest')
+                'username': username
             }
         )
         return checkout_session.url
@@ -329,20 +331,37 @@ if 'orb_result' not in st.session_state:
 query_params = st.query_params
 if 'payment' in query_params:
     payment_status = query_params['payment']
-    if payment_status == 'success' and 'tokens' in query_params:
+    if payment_status == 'success' and 'tokens' in query_params and 'username' in query_params:
         tokens = int(query_params['tokens'])
-        if tokens == 10:
-            st.session_state.tokens += 12  # 10 + 2 bonus
-            # Save to database
-            if st.session_state.get('user_name'):
-                update_user_tokens(st.session_state.user_name, st.session_state.tokens)
-            st.success("🎉 Payment successful! 12 tokens added to your account (10 + 2 bonus)")
+        username = query_params['username']
+
+        # Get user's current token balance from database
+        user = get_user(username)
+        if user:
+            current_tokens = user.get('tokens', 0)
+
+            # Calculate new token balance
+            if tokens == 10:
+                new_tokens = current_tokens + 12  # 10 + 2 bonus
+                tokens_added = 12
+            else:
+                new_tokens = current_tokens + tokens
+                tokens_added = tokens
+
+            # Update database
+            update_user_tokens(username, new_tokens)
+
+            # Automatically log the user back in
+            st.session_state.user_name = user['username']
+            st.session_state.user_email = user.get('email', '')
+            st.session_state.user_mobile = user.get('mobile', '')
+            st.session_state.tokens = new_tokens
+            st.session_state.registered = True
+
+            st.success(f"🎉 Payment successful! {tokens_added} tokens added to your account!")
         else:
-            st.session_state.tokens += tokens
-            # Save to database
-            if st.session_state.get('user_name'):
-                update_user_tokens(st.session_state.user_name, st.session_state.tokens)
-            st.success(f"🎉 Payment successful! {tokens} tokens added to your account!")
+            st.error("User not found. Please contact support.")
+
         # Clear query params
         st.query_params.clear()
         st.rerun()
