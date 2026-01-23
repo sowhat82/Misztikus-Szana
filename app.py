@@ -378,7 +378,24 @@ if 'payment' in query_params:
 
             st.success(f"🎉 Payment successful! {tokens_added} tokens added to your account!")
         else:
-            st.error("User not found. Please contact support.")
+            # Payment succeeded but user not found - provide detailed info for support
+            st.error(f"⚠️ Payment completed but user account not found.")
+            st.warning(f"**Your payment was successful!** However, we couldn't automatically add the tokens to your account.")
+
+            # Show all users for debugging (admin view)
+            try:
+                all_users = supabase.table("users").select("username").execute()
+                usernames_in_db = [u['username'] for u in all_users.data]
+                st.info(f"""
+                **Support Information:**
+                - Username from payment: `{username}`
+                - Tokens purchased: {tokens} ({tokens + 2 if tokens == 10 else tokens} with bonus)
+                - Available usernames in system: {', '.join(usernames_in_db)}
+
+                Please login with your correct username and contact support with this information.
+                """)
+            except:
+                st.info(f"Username from payment: `{username}`, Tokens: {tokens}")
 
         # Clear query params
         st.query_params.clear()
