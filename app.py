@@ -138,7 +138,7 @@ def create_stripe_checkout_session(tokens, price_in_cents, gift_description):
                 'quantity': 1,
             }],
             mode='payment',
-            automatic_payment_methods={'enabled': True},
+            payment_method_types=['card'],
             success_url=f'{APP_BASE_URL}/?payment=success&tokens={tokens}&username={encoded_username}',
             cancel_url=f'{APP_BASE_URL}/?payment=cancelled',
             metadata={
