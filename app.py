@@ -83,29 +83,42 @@ def get_all_readings():
         return []
 
 def username_exists(username):
-    """Check if username already exists in Supabase"""
+    """Check if username already exists in Supabase (case-insensitive)"""
     try:
-        response = supabase.table("users").select("username").eq("username", username).execute()
+        # Check case-insensitive
+        response = supabase.table("users").select("username").ilike("username", username).execute()
         return len(response.data) > 0
     except Exception as e:
         return False
 
 def get_user(username):
-    """Retrieve user data from Supabase by username"""
+    """Retrieve user data from Supabase by username (case-insensitive)"""
     try:
+        # First try exact match
         response = supabase.table("users").select("*").eq("username", username).execute()
         if response.data and len(response.data) > 0:
             return response.data[0]
+
+        # If no exact match, try case-insensitive match
+        response = supabase.table("users").select("*").ilike("username", username).execute()
+        if response.data and len(response.data) > 0:
+            return response.data[0]
+
         return None
     except Exception as e:
         st.error(f"Error retrieving user: {e}")
         return None
 
 def update_user_tokens(username, tokens):
-    """Update user's token balance in Supabase"""
+    """Update user's token balance in Supabase (case-insensitive)"""
     try:
-        supabase.table("users").update({"tokens": tokens}).eq("username", username).execute()
-        return True
+        # Get the actual username with correct case
+        user = get_user(username)
+        if user:
+            actual_username = user['username']
+            supabase.table("users").update({"tokens": tokens}).eq("username", actual_username).execute()
+            return True
+        return False
     except Exception as e:
         st.error(f"Error updating tokens: {e}")
         return False
